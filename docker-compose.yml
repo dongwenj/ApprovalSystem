@@ -1,0 +1,57 @@
+services:
+  db:
+    image: mcr.microsoft.com/mssql/server:2022-latest
+    container_name: approval-system-db-1
+    ports:
+      - "1434:1433"
+    volumes:
+      - approval-system-db-data:/var/opt/mssql
+    environment:
+      - ACCEPT_EULA=Y
+      - MSSQL_SA_PASSWORD=${DB_PASSWORD:-TempPassword123!}
+    networks:
+      - sign-net
+
+  web:
+    build: 
+      context: ./approval-system-api #指向後端資料夾
+      dockerfile: Dockerfile
+    image: approval-system-api
+    container_name: approval-system-api-1
+    volumes:
+      - ./approval-system-api/Logs:/app/Logs
+    expose:
+      - 8080
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Development
+      - TZ=Asia/Taipei # 同步時區
+      - ConnectionStrings__DefaultConnection=Server=db;Database=ApprovalSystem;User Id=sa;Password=${DB_PASSWORD:-TempPassword123!};TrustServerCertificate=True;
+      - Jwt__Key=${JWT_KEY:-Default_Temp_Key_99_Please_Change_In_Prod_!}
+    depends_on:
+      - db
+    networks:
+      - sign-net
+
+  ui:
+    build:
+      context: ./approval-system-ui # 指向前端資料夾
+      dockerfile: Dockerfile
+      args:
+        - REACT_APP_API_URL=${REACT_APP_API_URL:-http://localhost/api}
+    image: approval-system-ui
+    container_name: approval-system-ui-1
+    ports:
+      - "80:80"
+    environment:
+      - TZ=Asia/Taipei # 同步時區
+    depends_on:
+      - web
+    networks:
+      - sign-net
+
+volumes:
+ approval-system-db-data:
+
+networks:
+  sign-net:
+    driver: bridge

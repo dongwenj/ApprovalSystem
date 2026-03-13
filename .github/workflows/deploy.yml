@@ -1,0 +1,125 @@
+name: Deploy with Docker Compose
+
+on:
+  push:
+    branches: [ "main" ]
+  workflow_dispatch:
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+    steps:
+      # 1. 下載程式碼
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      # 2. 設定 Docker Buildx
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      # 3. 登入 Docker Hub
+      - name: Login to Docker Hub
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKER_USERNAME }}
+          password: ${{ secrets.DOCKER_PASSWORD }}
+
+      # 4. 建置並推送後端到 Docker Hub
+      - name: Build and push Backend
+        uses: docker/build-push-action@v5
+        with:
+          context: ./approval-system-api
+          file: ./approval-system-api/Dockerfile
+          push: true
+          tags: ${{ secrets.DOCKER_USERNAME }}/approval-system-api:latest
+      
+      # 5. 建置並推送前端 (包含 Nginx)
+      - name: Build and push Frontend
+        uses: docker/build-push-action@v5
+        with:
+          context: ./approval-system-ui
+          file: ./approval-system-ui/Dockerfile
+          push: true
+          build-args: REACT_APP_API_URL=${{ secrets.REACT_APP_API_URL }}
+          tags: ${{ secrets.DOCKER_USERNAME }}/approval-system-ui:latest
+
+      # 6. 連線 AWS 並部署
+      - name: Deploy to AWS EC2
+        uses: appleboy/ssh-action@v1.0.3
+        env:
+          DOCKER_USERNAME: ${{ secrets.DOCKER_USERNAME }}
+          DOCKER_PASSWORD: ${{ secrets.DOCKER_PASSWORD }}
+          DB_PASSWORD: ${{ secrets.DB_PASSWORD }}
+          RDS_ENDPOINT: ${{ secrets.RDS_ENDPOINT }}
+          JWT_KEY: ${{ secrets.JWT_KEY }}
+        with:
+          host: ${{ secrets.AWS_HOST }}
+          username: ${{ secrets.AWS_USERNAME }}
+          key: ${{ secrets.AWS_SSH_KEY }}
+          envs: DOCKER_USERNAME, DOCKER_PASSWORD, DB_PASSWORD, RDS_ENDPOINT, JWT_KEY
+          script: |
+            # 設定遇到錯誤即停止
+            set -e
+
+            echo "開始部署流程..."
+
+            # 登入 Docker Hub
+            echo "$DOCKER_PASSWORD" | docker login -u "$DOCKER_USERNAME" --password-stdin
+
+            # 建立正式環境用的資料夾
+            mkdir -p ~/approvalsystem
+            cd ~/approvalsystem
+
+            # 直接在伺服器上產生 docker-compose.yml
+            # 使用EOF來寫入檔案
+            cat > docker-compose.yml <<EOF
+            services:
+              web:
+                #這裡用剛剛Push上去的Image,而不是build .
+                image: ${DOCKER_USERNAME}/approval-system-api:latest
+                container_name: approval-system-api
+                volumes:
+                  - ./Logs:/app/Logs
+                restart: always
+                expose:
+                  - 8080
+                environment:
+                  - ASPNETCORE_ENVIRONMENT=Production
+                  - TZ=Asia/Taipei # 同步時區
+                  - ConnectionStrings__DefaultConnection=Server=${RDS_ENDPOINT};Database=ApprovalSystem;User Id=sa;Password=${DB_PASSWORD};TrustServerCertificate=True;
+                  - Jwt__Key=${JWT_KEY}
+                networks:
+                  - sign-net
+              
+              ui:
+                image: ${DOCKER_USERNAME}/approval-system-ui:latest
+                container_name: approval-system-ui
+                restart: always
+                ports:
+                  - "80:80" #http
+                  - "443:443" #https
+                environment:
+                  - TZ=Asia/Taipei # 同步時區
+                depends_on:
+                  - web
+                networks:
+                  - sign-net
+            
+            networks:
+              sign-net:
+                driver: bridge
+
+            EOF
+
+            echo "docker-compose.yml 建立完成"
+
+            # 拉取最新映像檔
+            docker compose pull
+
+            # 啟動服務 (會自動重建有更新的容器)
+            docker compose up -d --remove-orphans
+
+            # 清理過期的映像檔節省空間
+            docker image prune -f
+
+            echo "部署成功！網站已在 AWS 上線"

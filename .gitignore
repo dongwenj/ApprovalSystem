@@ -1,0 +1,34 @@
+# --- Frontend (React) ---
+node_modules/
+/build
+/dist
+.pnp
+.pnp.js
+coverage/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# --- Backend (.NET) ---
+bin/
+obj/
+.vs/
+*.user
+*.suo
+*.sln.doccache
+appsettings.Development.json
+
+# --- Environment & Secrets ---
+.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+*.pem
+certs/
+
+# --- Logs & OS ---
+Logs/
+*.log
+.DS_Store
+Thumbs.db

@@ -1,0 +1,10 @@
+.vs/ 
+bin/ 
+obj/
+
+Logs/
+approval-system-api/Logs/
+*.log
+
+.env
+*.pem

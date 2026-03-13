@@ -1,0 +1,120 @@
+name: Deploy with Docker Compose
+
+on:
+  push:
+    branches: [ "main" ]
+  workflow_dispatch:
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+    steps:
+      # 1. 下載程式碼
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      # 2. 設定 Docker Buildx
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      # 3. 登入 Docker Hub
+      - name: Login to Docker Hub
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKER_USERNAME }}
+          password: ${{ secrets.DOCKER_PASSWORD }}
+
+      # 4. 建置並推送到 Docker Hub
+      - name: Build and push
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          file: ./Dockerfile
+          push: true
+          tags: ${{ secrets.DOCKER_USERNAME }}/approvalsystem-web:latest
+
+      # 5. 連線 AWS 並部署
+      - name: Deploy to AWS EC2
+        uses: appleboy/ssh-action@v1.0.3
+        env:
+          DOCKER_USERNAME: ${{ secrets.DOCKER_USERNAME }}
+          DOCKER_PASSWORD: ${{ secrets.DOCKER_PASSWORD }}
+          DB_PASSWORD: ${{ secrets.DB_PASSWORD }}
+          JWT_KEY: ${{ secrets.JWT_KEY }}
+        with:
+          host: ${{ secrets.AWS_HOST }}
+          username: ${{ secrets.AWS_USERNAME }}
+          key: ${{ secrets.AWS_SSH_KEY }}
+          envs: DOCKER_USERNAME, DOCKER_PASSWORD, DB_PASSWORD, JWT_KEY
+          script: |
+            # 設定遇到錯誤即停止
+            set -e
+
+            echo "開始部署流程..."
+
+            # 登入 Docker Hub
+            echo "$DOCKER_PASSWORD" | docker login -u "$DOCKER_USERNAME" --password-stdin
+
+            # 建立正式環境用的資料夾
+            mkdir -p ~/approvalsystem
+            cd ~/approvalsystem
+
+            # 直接在伺服器上產生 docker-compose.yml
+            # 使用EOF來寫入檔案
+            cat > docker-compose.yml <<EOF
+            services:
+              db:
+                image: mcr.microsoft.com/mssql/server:2022-latest
+                container_name: approvalsystem-db
+                restart: always
+                volumes:
+                  - db-data:/var/opt/mssql
+                environment:
+                  - ACCEPT_EULA=Y
+                  - MSSQL_SA_PASSWORD=${DB_PASSWORD} # 從 GitHub Secret 注入
+                networks:
+                  - sign-net
+                healthcheck:
+                  test: ["CMD-SHELL", "/opt/mssql-tools18/bin/sqlcmd -S localhost -U sa -P '${DB_PASSWORD}' -Q 'SELECT 1' -C || exit 1"]
+                  interval: 10s
+                  timeout: 5s
+                  retries: 10
+                  start_period: 60s
+
+              web:
+                #這裡改用剛剛Push上去的Image，而不是build .
+                image: ${DOCKER_USERNAME}/approvalsystem-web:latest
+                container_name: approvalsystem-web
+                volumes:
+                  - ./Logs:/app/Logs
+                restart: always
+                ports:
+                  - "80:8080" # AWS開80給外面，內部轉8080
+                environment:
+                  - ASPNETCORE_ENVIRONMENT=Production
+                  - ConnectionStrings__DefaultConnection=Server=db;Database=ApprovalSystem;User Id=sa;Password=${DB_PASSWORD};TrustServerCertificate=True;
+                  - Jwt__Key=${JWT_KEY}
+                depends_on:
+                  db:
+                    condition: service_healthy
+                networks:
+                  - sign-net
+
+            volumes:
+              db-data:
+
+            networks:
+              sign-net:
+                driver: bridge
+            EOF
+
+            echo "docker-compose.yml 建立完成"
+
+            # 拉取最新映像檔
+            docker compose pull web
+
+            # 啟動服務 (會自動重建有更新的容器)
+            # -d 代表後台執行
+            docker compose up -d --remove-orphans
+
+            echo "部署成功！網站已在 AWS 上線"
