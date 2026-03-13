@@ -37,7 +37,7 @@ services:
       context: ./approval-system-ui # 指向前端資料夾
       dockerfile: Dockerfile
       args:
-        - REACT_APP_API_URL=${REACT_APP_API_URL:-http://localhost/api}
+        - VITE_API_URL=${VITE_API_URL:-http://localhost/api}
     image: approval-system-ui
     container_name: approval-system-ui-1
     ports:
