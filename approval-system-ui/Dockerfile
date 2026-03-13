@@ -11,7 +11,7 @@ RUN npm run build
 # 使用 Nginx 執行
 FROM nginx:stable-alpine
 # 將編譯好的檔案複製到 Nginx 預設目錄
-COPY --from=build /app/build /usr/share/nginx/html
+COPY --from=build /app/dist /usr/share/nginx/html
 # React Router，防止重新整理 404
 COPY nginx.conf /etc/nginx/conf.d/default.conf 
 EXPOSE 80
