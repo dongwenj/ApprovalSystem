@@ -5,8 +5,13 @@ import axios from 'axios';
 const BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost/apiTEST'; //本地開發PORT須改為5266對應.Net8的launchsetting.json
 console.log('當前的 API 網址是:', BASE_URL);
 
+interface LoginValues {
+  id: string;
+  password: string;
+}
+
 const Login = () => {
-  const onFinish = async (values) => {
+  const onFinish = async (values: LoginValues) => {
     try {
       const response = await axios.post(`${BASE_URL}/Login`, {
         id: parseInt(values.id),
