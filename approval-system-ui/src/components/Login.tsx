@@ -1,4 +1,3 @@
-import React from 'react';
 import { Button, Card, Input, Form, message } from 'antd';
 import axios from 'axios';
 
