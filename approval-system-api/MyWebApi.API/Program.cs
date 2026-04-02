@@ -1,3 +1,4 @@
+using Hangfire;
 using Microsoft.OpenApi.Models;
 using MyWebApi.API.Filters;
 using MyWebApi.API.Middlewares;
@@ -5,6 +6,7 @@ using MyWebApi.Application;
 using MyWebApi.Domain.Constants;
 using MyWebApi.Infrastructure;
 using MyWebApi.Infrastructure.Context;
+using MyWebApi.Infrastructure.Services;
 using Serilog;
 using System.Text.Encodings.Web;
 using System.Text.Unicode;
@@ -23,7 +25,12 @@ internal class Program
         builder.Host.UseSerilog((context, services, configuration) => configuration
             .ReadFrom.Configuration(context.Configuration)
             .ReadFrom.Services(services)
-            .Enrich.FromLogContext());
+            .Enrich.FromLogContext()
+            .WriteTo.Console()
+            .WriteTo.Sink(new SignalRSink(services)) //加入即時日誌轉發插件
+            //排除 SignalR 內部的日誌，避免連線動作產生過多雜訊
+            .MinimumLevel.Override("Microsoft.AspNetCore.SignalR", Serilog.Events.LogEventLevel.Warning)
+            .MinimumLevel.Override("Microsoft.AspNetCore.Http.Connections", Serilog.Events.LogEventLevel.Warning));
 
         // 建立 CORS 規則
         builder.Services.AddCors(options =>
@@ -31,13 +38,14 @@ internal class Program
             options.AddPolicy("MyReactAppPolicy", policy =>
             {
                 policy.WithOrigins(
-                    "http://localhost:3000",   // CRA 本地開發 (npm start)
+                    "http://localhost:5173",   // CRA 本地開發 (npm run dev)
                     "http://localhost",        // Docker 內部的 Nginx (80 Port)
                     "http://approvalsystem.sytes.net", // AWS EC2
                     "https://approvalsystem.sytes.net" // AWS EC2
                 )
                 .AllowAnyHeader()
-                .AllowAnyMethod();
+                .AllowAnyMethod()
+                .AllowCredentials();
             });
         });
 
@@ -84,18 +92,22 @@ internal class Program
 
         var app = builder.Build();
 
+        //基礎開發工具與面板
         app.UseSwagger();
         app.UseSwaggerUI();
+        app.UseHangfireDashboard("/hangfire");
 
+        //日誌與異常處理
         app.UseSerilogRequestLogging();
-
-        //全域exception處理
         app.UseMiddleware<ExceptionMiddleware>();
 
+        //路由與 CORS
+        app.UseRouting();
+        app.UseCors("MyReactAppPolicy"); //必須放在MapControllers之前
+
+        // HTTPS 與 安全性
         app.UseHttpsRedirection();
-
         app.UseAuthentication();
-
         app.UseAuthorization();
 
         //處理LOG的TraceId
@@ -108,9 +120,9 @@ internal class Program
             await DbInitializer.Initialize(services);
         }
 
-        app.UseCors("MyReactAppPolicy"); //必須放在MapControllers之前
-
         app.MapControllers();
+
+        app.MapHub<LogHub>("/hubs/log"); //SignalR Hub的路徑
 
         app.Run();
     }

@@ -5,7 +5,7 @@
         public const string NotEmpty = "{0}不可為空";
         public const string StringMustShorter = "{0}長度不可超過{1}字";
         public const string DateMustLongerThanToday = "{0}不可晚於今天";
-        public const string NumberMustGreater = "{0}必須大於{1}";
+        public const string NumberMustGreater = "{0}必須大於{1}的正整數";
     }
 
     public static class ExceptionMessages

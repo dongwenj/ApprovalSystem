@@ -10,6 +10,7 @@ using MyWebApi.Domain.Enums;
 using MyWebApi.Domain.Interfaces;
 using System.Linq.Expressions;
 using static MyWebApi.Application.DTOs.Request.ApplicationFormAdd_Req;
+using static MyWebApi.Application.DTOs.Respon.ApplicationFormQuery_Res;
 
 namespace MyWebApi.Tests.Service
 {
@@ -59,9 +60,12 @@ namespace MyWebApi.Tests.Service
         {
             var user = new UserDataBase { Id = 1, Level = 1 };
 
-            var fakeList = new List<ApplicationFormQuery_Res>
+            var fakeList = new ApplicationFormQuery_Res
             {
-                new ApplicationFormQuery_Res { ApplicationNo = "1" }
+                DataList = new List<DataItem>
+                {
+                    new DataItem { ApplicationNo = "1" },
+                },
             };
 
             var searchModel = new ApplicationFormQuery_Req();
@@ -571,11 +575,11 @@ namespace MyWebApi.Tests.Service
             _mockAppFormRepo.Setup(x => x.GetByIdAsync(It.IsAny<int>())).ReturnsAsync(entity);
             _mockAppFormDetailRepo.Setup(x => x.WhereAsync(It.IsAny<Expression<Func<ApplicationFormDetail, bool>>>())).ReturnsAsync(detailEntity);
             _mockSystemUserRepo.Setup(x => x.GetByIdAsync(It.IsAny<int>())).ReturnsAsync(systemUser);
-            _mockJobScheduler.Setup(x => x.Schedule(It.IsAny<Expression<Action>>(), It.IsAny<TimeSpan>())).Returns(string.Empty);
+            _mockJobScheduler.Setup(x => x.Enqueue(It.IsAny<Expression<Action>>())).Returns(string.Empty);
 
             var result = await _service.ApplicationFormSend(model);
 
-            _mockJobScheduler.Verify(x => x.Schedule(It.IsAny<Expression<Action>>(), TimeSpan.FromSeconds(5)), Times.Once());
+            _mockJobScheduler.Verify(x => x.Enqueue(It.IsAny<Expression<Action>>()), Times.Once());
         }
 
         [Fact]

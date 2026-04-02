@@ -1,6 +1,7 @@
 using Microsoft.AspNetCore.Mvc;
 using MyWebApi.Application.DTOs.Request;
 using MyWebApi.Application.Interfaces;
+using MyWebApi.Domain.Entities;
 
 namespace MyWebApi.API.Controllers;
 
@@ -15,10 +16,10 @@ public class LoginController : ControllerBase
         _authService = authService;
     }
         
-    [HttpPost("Login")]
-    public IActionResult Login([FromBody]Login_Req user)
+    [HttpPost("login")]
+    public async Task<IActionResult> Login([FromBody]Login_Req user)
     {
-        var token = _authService.GenerateStandardToken(user);
-        return Ok(new { token });
+        var loginInfo = await _authService.LoginInfo(user);
+        return Ok(loginInfo);
     }
 }

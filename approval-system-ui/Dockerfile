@@ -5,8 +5,12 @@ RUN npm install
 COPY . .
 # 接收來自 compose 的變數
 ARG VITE_API_URL
+ARG VITE_HUB_URL
+
+# 將 ARG 轉為 ENV，讓 Vite 編譯時抓得到
 ENV VITE_API_URL=$VITE_API_URL
-RUN echo "Checking ARG: $VITE_API_URL"
+ENV VITE_HUB_URL=$VITE_HUB_URL
+
 RUN npm run build
 
 # 使用 Nginx 執行

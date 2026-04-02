@@ -2,6 +2,7 @@
 using Microsoft.Extensions.Configuration;
 using Microsoft.IdentityModel.Tokens;
 using MyWebApi.Application.DTOs.Request;
+using MyWebApi.Application.DTOs.Respon;
 using MyWebApi.Application.Interfaces;
 using MyWebApi.Domain.Constants;
 using MyWebApi.Domain.Entities;
@@ -26,14 +27,8 @@ namespace MyWebApi.Infrastructure.Authentication
         }
 
         //產生JWT Token
-        public async Task<string> GenerateStandardToken(Login_Req userDto)
+        public async Task<string> GenerateStandardToken(SystemUser user)
         {
-            var user = await _systemUserRepo.FirstOrDefaultAsync(x => x.Id == userDto.Id);
-            if (user == null)
-            {
-                throw new ArgumentException("帳號不存在");
-            }
-
             //Payload
             var claims = new List<Claim>
             {
@@ -61,6 +56,22 @@ namespace MyWebApi.Infrastructure.Authentication
             );
 
             return new JwtSecurityTokenHandler().WriteToken(token);
+        }
+
+        public async Task<Login_Res> LoginInfo(Login_Req userDto)
+        {
+            var user = await _systemUserRepo.FirstOrDefaultAsync(x => x.Id == userDto.Id) ?? throw new ArgumentException("帳號不存在");
+            string token = await GenerateStandardToken(user);
+
+            var loginInfo = new Login_Res
+            {
+                UserName = user.UserName,
+                Level = user.Level,
+                Dept = user.DeptId,
+                Token = token
+            };
+
+            return loginInfo;
         }
 
         public UserDataBase GetUserData()

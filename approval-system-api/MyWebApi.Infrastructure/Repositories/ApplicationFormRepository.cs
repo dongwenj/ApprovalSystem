@@ -22,7 +22,7 @@ namespace MyWebApi.Infrastructure.Repositories
             _logger = logger;
         }
 
-        public async Task<IEnumerable<ApplicationFormQuery_Res>> QueryAsync(ApplicationFormQuery_Req searchModel)
+        public async Task<ApplicationFormQuery_Res> QueryAsync(ApplicationFormQuery_Req searchModel)
         {
             using var conn = _dbFactory.CreateConnection();
             StringBuilder sb = new StringBuilder();
@@ -32,12 +32,16 @@ namespace MyWebApi.Infrastructure.Repositories
 SELECT 
 af.ApplicationNo,
 af.ApplicationDate,
+af.Status,
 su.UserName,
 su.DeptId,
+su2.UserName AS SignerName,
 af.Reason,
-af.RowVersion
+af.RowVersion,
+COUNT(*) OVER() AS TotalCount
 FROM ApplicationForm af
 LEFT JOIN SystemUser su ON af.ApplicantId = su.Id AND su.DeletedAt IS NULL
+LEFT JOIN SystemUser su2 ON af.SignerId = su2.Id AND su.DeletedAt IS NULL
 WHERE 1=1
 AND af.DeletedAt IS NULL
 ");
@@ -65,18 +69,30 @@ AND af.DeletedAt IS NULL
                 sb.AppendLine(" AND su.Id = @Id ");
                 parms.Add("@Id", searchModel.User.Id);
             }
+            else //主管以上可以看到自己該簽核的申請單
+            {
+                sb.AppendLine(" AND af.SignerId = @Id AND af.Status = 2 ");
+                parms.Add("@Id", searchModel.User.Id);
+            }
 
-            sb.AppendLine(" ORDER BY af.ApplicationDate DESC "); //依申請日期排序(分頁用)
+            sb.AppendLine(" ORDER BY CONVERT(DATE, ApplicationDate, 101) DESC, ApplicationNo ");
             sb.AppendLine(" OFFSET @Skip ROWS FETCH NEXT @PageSize ROWS ONLY ");
 
             var skip = (searchModel.PageNumber - 1) * searchModel.PageSize;
             parms.Add("@Skip", skip);
             parms.Add("@PageSize", searchModel.PageSize);
 
-            var result = await conn.QueryAsync<ApplicationFormQuery_Res>(sb.ToString(), parms);
+            var items = await conn.QueryAsync<ApplicationFormQuery_Res.DataItem>(sb.ToString(), parms);
+            var totalCount = items.FirstOrDefault()?.TotalCount ?? 0;
 
-            _logger.LogInformation("[{Method}] 查詢完成，回傳 {Count} 筆資料", nameof(QueryAsync), result.Count());
-            return result;
+            var response = new ApplicationFormQuery_Res
+            {
+                DataList = items.ToList(),
+                TotalCount = totalCount
+            };
+
+            _logger.LogInformation("[{Method}] 查詢完成，回傳 {Count} 筆資料", nameof(QueryAsync), items.Count());
+            return response;
         }
 
         public async Task<ApplicationFormView_Res> ViewAsync(ApplicationFormView_Req model)

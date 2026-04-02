@@ -38,6 +38,7 @@ services:
       dockerfile: Dockerfile
       args:
         - VITE_API_URL=${VITE_API_URL:-http://localhost/api}
+        - VITE_HUB_URL=${VITE_HUB_URL:-http://localhost}
     image: approval-system-ui
     container_name: approval-system-ui-1
     ports:

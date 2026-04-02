@@ -58,6 +58,19 @@ namespace MyWebApi.Infrastructure.Services
 
                     _logger.LogInformation("郵件已成功寄出。收件人: {Receiver}, 時間: {Time}", toEmail, DateTime.Now);
                 }
+                catch (SmtpCommandException ex)
+                {
+                    // 5.1.3 代表 Bad recipient address syntax
+                    if (ex.ErrorCode == SmtpErrorCode.RecipientNotAccepted || ex.Message.Contains("5.1.3"))
+                    {
+                        _logger.LogError("郵件格式錯誤，取消重試。收件人: {Receiver}, 錯誤: {Error}", toEmail, ex.Message);
+
+                        return;
+                    }
+
+                    _logger.LogWarning("SMTP 指令失敗: {ErrorMsg}。收件人: {Receiver}", ex.Message, toEmail);
+                    throw;
+                }
                 catch (Exception ex)
                 {
                     _logger.LogWarning("寄信失敗 ({ErrorMsg})。收件人: {Receiver}", ex.Message, toEmail);

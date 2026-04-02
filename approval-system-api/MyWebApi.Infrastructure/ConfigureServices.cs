@@ -54,6 +54,8 @@ namespace MyWebApi.Infrastructure
             services.AddHangfireServer();
             services.AddScoped<IJobScheduler, HangfireJobScheduler>();
 
+            services.AddHangfireServer();
+
             //JWT設定
             services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
             .AddJwtBearer(options =>
@@ -70,6 +72,8 @@ namespace MyWebApi.Infrastructure
                     IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(configuration[ConfigKeys.Jwt.Key])),
                 };
             });
+
+            services.AddSignalR();
 
             return services;
         }

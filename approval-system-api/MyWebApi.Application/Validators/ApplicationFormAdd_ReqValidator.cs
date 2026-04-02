@@ -9,9 +9,6 @@ namespace MyWebApi.Application.Validator
     {
         public ApplicationFormAdd_ReqValidator()
         {
-            ValidatorOptions.Global.LanguageManager.Enabled = true;
-            ValidatorOptions.Global.LanguageManager.Culture = new CultureInfo("zh-TW");
-
             RuleFor(x => x.ApplicationDate.Date)
                 .NotEmpty().WithMessage(string.Format(ErrorMessages.NotEmpty, "申請日期"))
                 .LessThanOrEqualTo(DateTime.Today).WithMessage(string.Format(ErrorMessages.DateMustLongerThanToday, "申請日期"));
@@ -31,9 +28,6 @@ namespace MyWebApi.Application.Validator
     {
         public ItemValidator()
         {
-            ValidatorOptions.Global.LanguageManager.Enabled = true;
-            ValidatorOptions.Global.LanguageManager.Culture = new CultureInfo("zh-TW");
-
             RuleFor(x => x.ItemName)
             .NotEmpty().WithMessage(string.Format(ErrorMessages.NotEmpty, "品名"))
             .MaximumLength(100).WithMessage(string.Format(ErrorMessages.StringMustShorter, "品名", "100"));

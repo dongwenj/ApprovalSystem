@@ -40,7 +40,9 @@ jobs:
           context: ./approval-system-ui
           file: ./approval-system-ui/Dockerfile
           push: true
-          build-args: VITE_API_URL=${{ secrets.VITE_API_URL }}
+          build-args: |
+            VITE_API_URL=${{ secrets.VITE_API_URL }}
+            VITE_HUB_URL=${{ secrets.VITE_HUB_URL }}
           tags: ${{ secrets.DOCKER_USERNAME }}/approval-system-ui:latest
 
       # 6. 連線 AWS 並部署

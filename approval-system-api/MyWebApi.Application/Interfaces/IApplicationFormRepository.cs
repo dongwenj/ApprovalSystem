@@ -7,7 +7,7 @@ namespace MyWebApi.Application.Interfaces
 {
     public interface IApplicationFormRepository : IGenericRepository<ApplicationForm>
     {
-        Task<IEnumerable<ApplicationFormQuery_Res>> QueryAsync(ApplicationFormQuery_Req searchModel);
+        Task<ApplicationFormQuery_Res> QueryAsync(ApplicationFormQuery_Req searchModel);
         Task<ApplicationFormView_Res> ViewAsync(ApplicationFormView_Req model);
     }
 }

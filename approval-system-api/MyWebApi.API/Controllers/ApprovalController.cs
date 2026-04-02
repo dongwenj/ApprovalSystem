@@ -59,7 +59,7 @@ public class ApprovalController : ControllerBase
 
     [HttpPost("present")]
     [Authorize]
-    public async Task<IActionResult> ApplicationFormPresent([FromQuery] ApplicationFormSubmit_Req req)
+    public async Task<IActionResult> ApplicationFormPresent([FromBody] ApplicationFormSubmit_Req req)
     {
         var result = await _mainService.ApplicationFormPresent(req);
         return Ok(result);
@@ -67,7 +67,7 @@ public class ApprovalController : ControllerBase
 
     [HttpPost("review")]
     [Authorize]
-    public async Task<IActionResult> ApplicationFormReview([FromQuery] ApplicationFormReview_Req req)
+    public async Task<IActionResult> ApplicationFormReview([FromBody] ApplicationFormReview_Req req)
     {
         var result = await _mainService.ApplicationFormReview(req);
         return Ok(result);
@@ -75,7 +75,7 @@ public class ApprovalController : ControllerBase
 
     [HttpPost("send")]
     [Authorize]
-    public async Task<IActionResult> ApplicationFormSend([FromQuery] ApplicationFormSend_Req req)
+    public async Task<IActionResult> ApplicationFormSend([FromBody] ApplicationFormSend_Req req)
     {
         var result = await _mainService.ApplicationFormSend(req);
         return Ok(result);

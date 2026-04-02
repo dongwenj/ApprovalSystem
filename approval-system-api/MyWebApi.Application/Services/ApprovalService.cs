@@ -51,7 +51,7 @@ public class ApprovalService
     }
 
     //申請單列表查詢
-    public async Task<IEnumerable<ApplicationFormQuery_Res>> ApplicationFormQuery(ApplicationFormQuery_Req searchModel)
+    public async Task<ApplicationFormQuery_Res> ApplicationFormQuery(ApplicationFormQuery_Req searchModel)
     {
         var user = _authService.GetUserData();
         searchModel.User = user;
@@ -412,7 +412,8 @@ public class ApprovalService
 
         sb.AppendLine("<br/><p>※ 此信件由系統自動發送，請勿直接回覆。</p>");
 
-        _jobScheduler.Schedule(() => _emailService.SendAsync(toEmail, subject, sb.ToString()), TimeSpan.FromSeconds(5));
+        _jobScheduler.Enqueue(() => _emailService.SendAsync(toEmail, subject, sb.ToString()));
+        //_jobScheduler.Schedule(() => _emailService.SendAsync(toEmail, subject, sb.ToString()), TimeSpan.FromSeconds(5));
 
         return result;
     }
