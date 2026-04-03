@@ -26,7 +26,7 @@ const AdminDashboard = () => {
         deptId: params.DeptId || undefined,
         applicationDate: params.ApplicationDate || undefined,
         pageNumber: params.PageNumber || 1,
-        pageSize: params.PageSize || 10,
+        pageSize: params.PageSize || 5,
       };
 
       // 呼叫真正的 API
@@ -53,7 +53,7 @@ const AdminDashboard = () => {
     await handleLogin('1'); 
     
     // 步驟 B: 登入完成後，執行初始資料查詢
-    handleSearch({ PageNumber: 1, PageSize: 10 });
+    handleSearch({ PageNumber: 1, PageSize: 5 });
   };
 
   initialize();

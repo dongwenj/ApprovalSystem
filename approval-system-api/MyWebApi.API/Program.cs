@@ -122,7 +122,7 @@ internal class Program
 
         app.MapControllers();
 
-        app.MapHub<LogHub>("/hubs/log"); //SignalR Hub的路徑
+        app.MapHub<LogHub>("/hubs/monitor"); //SignalR Hub的路徑
 
         app.Run();
     }
