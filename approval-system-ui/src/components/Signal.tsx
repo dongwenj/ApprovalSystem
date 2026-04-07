@@ -1,6 +1,6 @@
 import React, { useEffect, useState, useRef } from 'react';
-import { Row, Col, Card, Tag, Descriptions, Button } from 'antd';
-import { HistoryOutlined, ThunderboltOutlined, DeleteOutlined } from '@ant-design/icons';
+import { Row, Col, Card, Button } from 'antd';
+import { HistoryOutlined, DeleteOutlined } from '@ant-design/icons';
 import styles from './Dashboard.module.css';
 import { setupSignalRConnection } from '../api/signal';
 
@@ -59,20 +59,6 @@ const LogConsole: React.FC = () => {
                 ))
               )}
             </div>
-          </Card>
-        </Col>
-      </Row>
-
-      <Row>
-        <Col span={24}>
-          <Card title={<span><ThunderboltOutlined /> Hangfire 排程</span>} variant="borderless">
-            <Descriptions column={3} size="middle" bordered>
-              <Descriptions.Item label="當前隊列">Default</Descriptions.Item>
-              <Descriptions.Item label="執行中任務">EmailNotifyJob</Descriptions.Item>
-              <Descriptions.Item label="伺服器狀態">
-                <Tag color="processing">運作中</Tag>
-              </Descriptions.Item>
-            </Descriptions>
           </Card>
         </Col>
       </Row>

@@ -27,7 +27,7 @@ internal class Program
             .ReadFrom.Services(services)
             .Enrich.FromLogContext()
             .WriteTo.Console()
-            .WriteTo.Sink(new SignalRSink(services)) //加入即時日誌轉發插件
+            .WriteTo.Sink(new SystemLogService(services)) //加入即時日誌轉發插件
             //排除 SignalR 內部的日誌，避免連線動作產生過多雜訊
             .MinimumLevel.Override("Microsoft.AspNetCore.SignalR", Serilog.Events.LogEventLevel.Warning)
             .MinimumLevel.Override("Microsoft.AspNetCore.Http.Connections", Serilog.Events.LogEventLevel.Warning));

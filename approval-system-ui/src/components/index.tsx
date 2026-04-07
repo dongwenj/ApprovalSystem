@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'; // 加入 useEffect
 import { Row, Col, Card, Statistic, message } from 'antd';
-import { CheckCircleOutlined, ClockCircleOutlined, SyncOutlined } from '@ant-design/icons';
+import { CheckCircleOutlined, ClockCircleOutlined, CloseCircleOutlined, FileTextOutlined } from '@ant-design/icons';
 import { loginApi } from '../api/auth.ts'; 
 import { queryApplicationForms } from '../api/datatable.ts'; 
 
@@ -14,6 +14,12 @@ const AdminDashboard = () => {
   const [tableData, setTableData] = useState<any[]>([]); 
   const [total, setTotal] = useState<number>(0); // 修正 total 紅線
   const [userProfile, setUserProfile] = useState<any>(null);
+  const [stats, setStats] = useState({
+    draftStats: 0,
+    pendingStats: 0,
+    approvalStats: 0,
+    rejectedStats: 0
+  });
 
   // 2. 定義處理搜尋與分頁的邏輯 (修正 handleSearch 紅線)
   // 1. 核心 API 呼叫邏輯
@@ -34,6 +40,12 @@ const AdminDashboard = () => {
       if (result && result.isSuccess) {
         setTableData(result.dataList); // 將後端 DataItem[] 存入表格
         setTotal(result.totalCount); 
+        setStats({
+          draftStats: result.draftStats,
+          pendingStats: result.pendingStats,
+          approvalStats: result.approvalStats,
+          rejectedStats: result.rejectedStats
+        });
       } else {
         message.error(result.message || "查詢失敗");
       }
@@ -81,23 +93,43 @@ const AdminDashboard = () => {
       {/* 1. 統計區塊 */}
       <Row gutter={16} style={{ marginBottom: '24px' }}>
         <Col span={6}>
+          <Card variant="borderless" hoverable>
+            <Statistic 
+              title="尚未陳核" 
+              value={stats.draftStats} 
+              prefix={<FileTextOutlined />} 
+              valueStyle={{ color: '#8c8c8c' }} 
+            />
+          </Card>
+        </Col>
+        <Col span={6}>
           <Card variant="borderless" hoverable className={styles.statisticCard}>
-            <Statistic title="待簽核項目" value={12} prefix={<ClockCircleOutlined />} styles={{ content: {color: '#faad14' } }} />
+            <Statistic 
+              title="待簽核項目" 
+              value={stats.pendingStats} 
+              prefix={<ClockCircleOutlined />} 
+              valueStyle={{ color: '#faad14' }} 
+            />
           </Card>
         </Col>
         <Col span={6}>
           <Card variant="borderless" hoverable>
-            <Statistic title="今日已核准" value={45} prefix={<CheckCircleOutlined />} styles={{ content: {color: '#52c41a'} }} />
+            <Statistic 
+              title="已核准" 
+              value={stats.approvalStats} 
+              prefix={<CheckCircleOutlined />} 
+              valueStyle={{ color: '#52c41a' }} 
+            />
           </Card>
         </Col>
         <Col span={6}>
           <Card variant="borderless" hoverable>
-            <Statistic title="排程執行中" value={3} prefix={<SyncOutlined spin />} />
-          </Card>
-        </Col>
-        <Col span={6}>
-          <Card variant="borderless" hoverable>
-            <Statistic title="異常警示" value={0} styles={{ content: {color: '#ff4d4f'} }} />
+            <Statistic 
+              title="已退回" 
+              value={stats.rejectedStats} 
+              prefix={<CloseCircleOutlined />} 
+              valueStyle={{ color: '#ff4d4f' }} 
+            />
           </Card>
         </Col>
       </Row>

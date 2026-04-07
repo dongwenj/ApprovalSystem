@@ -66,6 +66,10 @@ namespace MyWebApi.Tests.Service
                 {
                     new DataItem { ApplicationNo = "1" },
                 },
+                ApprovalStats = 50,
+                DraftStats = 51,
+                PendingStats = 52,
+                RejectedStats = 53,
             };
 
             var searchModel = new ApplicationFormQuery_Req();
@@ -73,6 +77,8 @@ namespace MyWebApi.Tests.Service
             _mockAuthService.Setup(x => x.GetUserData()).Returns(user);
 
             _mockAppFormRepo.Setup(x => x.QueryAsync(It.IsAny<ApplicationFormQuery_Req>())).ReturnsAsync(fakeList);
+
+            _mockAppFormRepo.Setup(x => x.QueryStatusAsync(It.IsAny<ApplicationFormQuery_Req>())).ReturnsAsync(fakeList);
 
             var result = await _service.ApplicationFormQuery(searchModel);
 

@@ -58,6 +58,14 @@ public class ApprovalService
 
         var result = await _appFormRepo.QueryAsync(searchModel);
 
+        var stats = await _appFormRepo.QueryStatusAsync(searchModel);
+
+        // 3. 把統計數字塞回 result
+        result.DraftStats = stats.DraftStats;
+        result.PendingStats = stats.PendingStats;
+        result.ApprovalStats = stats.ApprovalStats;
+        result.RejectedStats = stats.RejectedStats;
+
         return result;
     }
 

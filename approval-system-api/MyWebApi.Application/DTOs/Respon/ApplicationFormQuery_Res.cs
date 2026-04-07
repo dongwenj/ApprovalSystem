@@ -4,6 +4,11 @@
     {
         public List<DataItem> DataList { get; set; } = new List<DataItem>();
 
+        public int DraftStats {  get; set; }
+        public int PendingStats {  get; set; }
+        public int ApprovalStats {  get; set; }
+        public int RejectedStats {  get; set; }
+
         public class DataItem
         {
             public string ApplicationNo { get; set; }

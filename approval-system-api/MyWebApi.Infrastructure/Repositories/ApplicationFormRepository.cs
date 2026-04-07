@@ -29,7 +29,7 @@ namespace MyWebApi.Infrastructure.Repositories
             DynamicParameters parms = new DynamicParameters();
 
             sb.AppendLine(@"
-SELECT 
+SELECT
 af.ApplicationNo,
 af.ApplicationDate,
 af.Status,
@@ -93,6 +93,37 @@ AND af.DeletedAt IS NULL
 
             _logger.LogInformation("[{Method}] 查詢完成，回傳 {Count} 筆資料", nameof(QueryAsync), items.Count());
             return response;
+        }
+
+        public async Task<ApplicationFormQuery_Res> QueryStatusAsync(ApplicationFormQuery_Req searchModel)
+        {
+            using var conn = _dbFactory.CreateConnection();
+            StringBuilder sb = new StringBuilder();
+            DynamicParameters parms = new DynamicParameters();
+
+            sb.AppendLine(@"
+        SELECT 
+            COUNT(CASE WHEN af.Status = 1 THEN 1 END) AS DraftStats,    -- 尚未陳核
+            COUNT(CASE WHEN af.Status = 2 THEN 1 END) AS PendingStats,  -- 待簽核
+            COUNT(CASE WHEN af.Status = 3 THEN 1 END) AS ApprovalStats, -- 已核准
+            COUNT(CASE WHEN af.Status = 4 THEN 1 END) AS RejectedStats  -- 已退回
+        FROM ApplicationForm af
+        WHERE af.DeletedAt IS NULL");
+
+            // 權限過濾
+            if (searchModel.User.Level == (int)UserLevel.General)
+            {
+                sb.AppendLine(" AND af.ApplicantId = @Id ");
+                parms.Add("@Id", searchModel.User.Id);
+            }
+            else
+            {
+                // 主管只需統計待簽核數量
+                sb.AppendLine(" AND af.SignerId = @Id AND af.Status = 2 ");
+                parms.Add("@Id", searchModel.User.Id);
+            }
+
+            return await conn.QuerySingleAsync<ApplicationFormQuery_Res>(sb.ToString(), parms);
         }
 
         public async Task<ApplicationFormView_Res> ViewAsync(ApplicationFormView_Req model)

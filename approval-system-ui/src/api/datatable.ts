@@ -27,6 +27,10 @@ interface ApplicationFormQueryRes {
   message: string;
   dataList: ApplicationFormDataItem[]; // 後端的 List<DataItem>
   totalCount: number;               
+  draftStats: number;     // 尚未陳核
+  pendingStats: number;   // 待簽核
+  approvalStats: number;  // 已核准
+  rejectedStats: number;  // 已退回
 }
 
 // --- 新增：細項 Item 的共用介面 ---

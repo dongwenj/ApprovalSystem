@@ -7,21 +7,19 @@ namespace MyWebApi.Infrastructure.Services
 {
     public class LogHub : Hub
     {
-
     }
 
-    public class SignalRSink : ILogEventSink
+    public class SystemLogService : ILogEventSink
     {
         private readonly IServiceProvider _serviceProvider;
 
-        public SignalRSink(IServiceProvider serviceProvider)
+        public SystemLogService(IServiceProvider serviceProvider)
         { 
             _serviceProvider = serviceProvider;
         }
 
         public void Emit(LogEvent logEvent)
         {
-            Console.WriteLine("Sink 觸發了！");
             // 直接從服務容器抓出剛才定義的 LogHub
             var hubContext = _serviceProvider.GetService<IHubContext<LogHub>>();
 
