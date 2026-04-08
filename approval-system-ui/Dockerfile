@@ -20,4 +20,5 @@ COPY --from=build /app/dist /usr/share/nginx/html
 # React Router，防止重新整理 404
 COPY nginx.conf /etc/nginx/conf.d/default.conf 
 EXPOSE 80
+EXPOSE 443
 CMD ["nginx", "-g", "daemon off;"]

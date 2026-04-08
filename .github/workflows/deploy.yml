@@ -24,7 +24,7 @@ jobs:
           username: ${{ secrets.DOCKER_USERNAME }}
           password: ${{ secrets.DOCKER_PASSWORD }}
 
-      # 4. 建置並推送後端到 Docker Hub
+      # 4. 建置並推送後端 (SignProcess API)
       - name: Build and push Backend
         uses: docker/build-push-action@v5
         with:
@@ -33,7 +33,7 @@ jobs:
           push: true
           tags: ${{ secrets.DOCKER_USERNAME }}/approval-system-api:latest
       
-      # 5. 建置並推送前端 (包含 Nginx)
+      # 5. 建置並推送前端 (React + Vite)
       - name: Build and push Frontend
         uses: docker/build-push-action@v5
         with:
@@ -60,24 +60,69 @@ jobs:
           key: ${{ secrets.AWS_SSH_KEY }}
           envs: DOCKER_USERNAME, DOCKER_PASSWORD, DB_PASSWORD, RDS_ENDPOINT, JWT_KEY
           script: |
-            # 設定遇到錯誤即停止
             set -e
+            echo "--- 開始部署流程 ---"
 
-            echo "開始部署流程..."
-
-            # 登入 Docker Hub
+            # 登入 Docker
             echo "$DOCKER_PASSWORD" | docker login -u "$DOCKER_USERNAME" --password-stdin
 
-            # 建立正式環境用的資料夾
+            # 建立並進入專案資料夾
             mkdir -p ~/approvalsystem
             cd ~/approvalsystem
 
-            # 直接在伺服器上產生 docker-compose.yml
-            # 使用EOF來寫入檔案
+            # 產生環境專屬的 Nginx 設定檔
+            cat > nginx.conf <<EOF
+            server {
+                listen 80;
+                server_name approvalsystem.sytes.net;
+                location /.well-known/acme-challenge/ {
+                    root /var/www/certbot;
+                }
+                location / {
+                    return 301 https://\$host\$request_uri;
+                }
+            }
+
+            server {
+                listen 443 ssl;
+                server_name approvalsystem.sytes.net;
+
+                ssl_certificate /etc/letsencrypt/live/approvalsystem.sytes.net/fullchain.pem;
+                ssl_certificate_key /etc/letsencrypt/live/approvalsystem.sytes.net/privkey.pem;
+
+                ssl_protocols TLSv1.2 TLSv1.3;
+                ssl_prefer_server_ciphers on;
+
+                location / {
+                    root   /usr/share/nginx/html;
+                    index  index.html index.htm;
+                    try_files \$uri \$uri/ /index.html;
+                }
+
+                location /api {
+                    proxy_pass http://web:8080;
+                    proxy_set_header Host \$host;
+                    proxy_set_header X-Real-IP \$remote_addr;
+                    proxy_set_header X-Forwarded-For \$proxy_add_x_forwarded_for;
+                    proxy_set_header X-Forwarded-Proto \$scheme;
+                    proxy_read_timeout 300;
+                }
+
+                location /hubs/ {
+                    proxy_pass http://web:8080;
+                    proxy_http_version 1.1;
+                    proxy_set_header Upgrade \$http_upgrade;
+                    proxy_set_header Connection "upgrade";
+                    proxy_set_header Host \$host;
+                    proxy_read_timeout 3600s;
+                }
+            }
+            EOF
+
+            # 產生 docker-compose.yml
             cat > docker-compose.yml <<EOF
             services:
               web:
-                #這裡用剛剛Push上去的Image,而不是build .
                 image: ${DOCKER_USERNAME}/approval-system-api:latest
                 container_name: approval-system-api
                 volumes:
@@ -87,7 +132,7 @@ jobs:
                   - 8080
                 environment:
                   - ASPNETCORE_ENVIRONMENT=Production
-                  - TZ=Asia/Taipei # 同步時區
+                  - TZ=Asia/Taipei
                   - ConnectionStrings__DefaultConnection=Server=${RDS_ENDPOINT};Database=ApprovalSystem;User Id=sa;Password=${DB_PASSWORD};TrustServerCertificate=True;
                   - Jwt__Key=${JWT_KEY}
                 networks:
@@ -98,10 +143,13 @@ jobs:
                 container_name: approval-system-ui
                 restart: always
                 ports:
-                  - "80:80" #http
-                  - "443:443" #https
+                  - "80:80"
+                  - "443:443"
+                volumes:
+                  - ./nginx.conf:/etc/nginx/conf.d/default.conf:ro
+                  - /etc/letsencrypt:/etc/letsencrypt:ro
                 environment:
-                  - TZ=Asia/Taipei # 同步時區
+                  - TZ=Asia/Taipei
                 depends_on:
                   - web
                 networks:
@@ -110,18 +158,13 @@ jobs:
             networks:
               sign-net:
                 driver: bridge
-
             EOF
 
-            echo "docker-compose.yml 建立完成"
-
-            # 拉取最新映像檔
+            echo "--- 設定檔準備完成，開始更新容器 ---"
             docker compose pull
-
-            # 啟動服務 (會自動重建有更新的容器)
             docker compose up -d --remove-orphans
-
-            # 清理過期的映像檔節省空間
+            
+            # 清理舊的 Image 節省 EC2 空間
             docker image prune -f
-
-            echo "部署成功！網站已在 AWS 上線"
+            
+            echo "--- 部署完成！網站已在 https://approvalsystem.sytes.net 上線 ---"
