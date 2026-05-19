@@ -11,7 +11,30 @@
 
 # DEMO 網址
 
-http://approvalsystem.sytes.net/
+https://approvalsystem.sytes.net/
+
+# Local 測試
+以下為本專案的本機啟動方式。
+
+請先安裝以下工具：
+- Docker
+- Docker Compose
+- Git
+
+```bash
+git clone https://github.com/dongwenj/ApprovalSystem.git
+```
+
+```bash
+cd ApprovalSystem
+```
+
+於專案根目錄執行：
+```bash
+docker compose up --build
+```
+
+| Frontend | http://localhost |
 
 ---
 
@@ -27,8 +50,9 @@ http://approvalsystem.sytes.net/
 ---
 # 架構圖
 
-<img width="371" height="622" alt="TEST drawio" src="https://github.com/user-attachments/assets/195961c3-de31-4e9c-85ae-1a3b40161ad3" />
+<img width="516" height="707" alt="TEST drawio" src="https://github.com/user-attachments/assets/9aa41a78-4d4d-43ca-b7cf-4f37b481ca09" />
 
+---
 # 技術棧
 
 ## Backend
