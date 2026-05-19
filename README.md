@@ -25,6 +25,9 @@ http://approvalsystem.sytes.net/
 <img width="817" height="962" alt="image" src="https://github.com/user-attachments/assets/6f9c3580-db7c-4013-8ba6-e2dca3208720" />
 
 ---
+# 架構圖
+
+<img width="371" height="622" alt="TEST drawio" src="https://github.com/user-attachments/assets/195961c3-de31-4e9c-85ae-1a3b40161ad3" />
 
 # 技術棧
 
@@ -34,6 +37,7 @@ http://approvalsystem.sytes.net/
 - Entity Framework Core
 - SignalR
 - Hangfire
+- UnitTest
 
 ## Frontend
 
