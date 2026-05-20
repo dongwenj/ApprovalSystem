@@ -13,6 +13,8 @@
 
 https://approvalsystem.sytes.net/
 
+---
+
 # Local 測試
 以下為本專案的本機啟動方式。
 
@@ -29,12 +31,12 @@ git clone https://github.com/dongwenj/ApprovalSystem.git
 cd ApprovalSystem
 ```
 
-於專案根目錄執行：
+啟動docker後於專案根目錄執行：
 ```bash
 docker compose up --build
 ```
 
-| Frontend | http://localhost |
+測試網址: http://localhost
 
 ---
 
@@ -59,6 +61,7 @@ docker compose up --build
 
 - ASP.NET Core
 - Entity Framework Core
+- Dapper
 - SignalR
 - Hangfire
 - UnitTest
