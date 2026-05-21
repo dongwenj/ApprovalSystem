@@ -12,6 +12,8 @@
 # DEMO 網址
 
 https://approvalsystem.sytes.net/
+由於預算問題，資料庫關閉中，目前只有靜態畫面。
+以下Local測試即可測試完整功能。
 
 ---
 
